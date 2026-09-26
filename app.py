@@ -7,23 +7,28 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 # ------------------------------
 # Load saved files
 # ------------------------------
+MAX_LEN = 50
+
 @st.cache_resource
 def load_resources():
     model = load_model("lstm_model.keras")
     with open("tokenizer.pkl", "rb") as f:
         tokenizer = pickle.load(f)
-    with open("max_len.pkl", "rb") as f:
-        max_len = pickle.load(f)
-    return model, tokenizer, max_len
+    return model, tokenizer
 
-model, tokenizer, max_len = load_resources()
+model, tokenizer = load_resources()
 
 # ------------------------------
 # Prediction function
 # ------------------------------
 def predict_next_word(text):
-    sequence = tokenizer.texts_to_sequences([text])[0]
-    sequence = pad_sequences([sequence], maxlen=max_len-1, padding='pre')
+    text = text.lower().strip()
+    sequences = tokenizer.texts_to_sequences([text])
+    if not sequences or not sequences[0]:
+        return "(word not recognized in vocabulary)"
+
+    sequence = sequences[0][-MAX_LEN:]
+    sequence = pad_sequences([sequence], maxlen=MAX_LEN, padding='pre')
 
     preds = model.predict(sequence, verbose=0)
     predicted_index = np.argmax(preds)
